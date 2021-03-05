@@ -16,15 +16,25 @@ namespace ParallelProgramming
                 Console.Write(c);
             }
         }
+
+        public static int TextLenght(object o)
+        {
+            Console.WriteLine(($"Task with id {Task.CurrentId } processing object {o}...")); //current id çalışan task numarasını verir
+            return o.ToString().Length;
+        }
+
         static void Main(string[] args)
         {
-            Task.Factory.StartNew(() => Write('.'));
+            string text1 = "testing", text2 = "this";
 
-            var t=new Task(()=>Write('?'));
-            t.Start();
+            var task1=new Task<int>(TextLenght,text1); // bu şekilde veya factory kullanılarak task oluşturulabilir.
+            task1.Start();
 
+            Task<int> task2 =Task<int>.Factory.StartNew(TextLenght, text2);  //otomatik olarak başlatmaması için task 2 ye atandı
 
-            Write('-');
+            Console.WriteLine($"Length of '{text1}' is {task1.Result}");  //result kullanınca taskin bitmesini bekler ve bitince sonucu yazdırır
+            Console.WriteLine($"Length of '{text2}' is {task2.Result}");
+
 
             Console.ReadKey();
         }

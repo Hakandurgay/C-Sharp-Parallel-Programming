@@ -1,0 +1,4 @@
+clumsy= sakar, beceriksiz
+
+convenient=müsait, münasip
+redundant=gereksiz
