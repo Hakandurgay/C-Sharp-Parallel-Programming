@@ -1,4 +1,4 @@
 clumsy= sakar, beceriksiz
-
 convenient=müsait, münasip
 redundant=gereksiz
+canonical=geleneklere uygun
