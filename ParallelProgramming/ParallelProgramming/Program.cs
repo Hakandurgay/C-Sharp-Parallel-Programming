@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting;
 using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading;
@@ -14,27 +15,18 @@ namespace ParallelProgramming
      
         static void Main(string[] args)
         {
-         
-            //bu üç token paranoid tokena bağlı. bu üçünden biri cancel edilirse paranoid token hata fırlatır
-          var planned= new CancellationTokenSource();   
-          var preventative= new CancellationTokenSource();
-          var emergency= new CancellationTokenSource();
 
-          var paranoid = CancellationTokenSource.CreateLinkedTokenSource(
-              planned.Token, preventative.Token, emergency.Token);
-
-          Task.Factory.StartNew(() =>
-          {
-              int i = 0;
-              while (true)
-              {
-                  paranoid.Token.ThrowIfCancellationRequested();
-                  Console.WriteLine($"{i++}\t");
-              }
-          },paranoid.Token);
-
-          Console.ReadKey();
-          emergency.Cancel();
+            var cts =new CancellationTokenSource();
+            var token = cts.Token;
+            var t = new Task(() =>
+            {
+                Console.WriteLine("press any key to disarm: you have 5 seconds");
+                bool cancelled = token.WaitHandle.WaitOne(5000);
+                Console.WriteLine(cancelled? "bomb disarmed." : "boom");
+            },token);
+            t.Start();
+            Console.ReadKey();
+            cts.Cancel();
 
           Console.ReadKey();
         }
