@@ -3,3 +3,4 @@ convenient=müsait, münasip
 redundant=gereksiz
 canonical=geleneklere uygun
 composite=bileþim
+relevent=konuyla ilgili
