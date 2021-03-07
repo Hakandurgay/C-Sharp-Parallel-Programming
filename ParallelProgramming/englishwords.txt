@@ -1,9 +1,13 @@
+acquire=elde etmek
+concurrent=kesiþen
 clumsy= sakar, beceriksiz
 convenient=müsait, münasip
-redundant=gereksiz
 canonical=geleneklere uygun
 composite=bileþim
-relevent=konuyla ilgili
 decomposeble= ayrýþtýrýlabilir
-concurrent=kesiþen
+redundant=gereksiz
+relevent=konuyla ilgili
 primitive= ilkel
+invocation=çaðýrma 
+yield=teslim olmak
+essentially=esasen
