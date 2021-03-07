@@ -6,3 +6,4 @@ composite=bileþim
 relevent=konuyla ilgili
 decomposeble= ayrýþtýrýlabilir
 concurrent=kesiþen
+primitive= ilkel

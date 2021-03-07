@@ -13,27 +13,25 @@ namespace ParallelProgramming
 
     public class BankAccount
     {
-        //birden basla thread t anında n tane işlem yapabilme ihtimali olduğu için lock keywordu uygulanmazsa critical section oluşur. yani 
-        // program her çalıştığında sonuç sıfır olması gerekirken farklı sonuçlar elde edilebilirç
-        //bunu önlemek için lock keywordu kullanılır. Bir thread içeri girdiğinde diğeri de girmek isterse ilk giren bitene kadar bekler.
-        //böylece hepsi sırayla girerek bir işlemde birden fazla thread çalışması engellenir.
-        public object padlock=new object();
-        public int Balance  { get; set; }
+        //Interlocked.Add atomic olmayan işlemi arka planda atomic olarak yaptığı için lock ile aynı sonucu verir
+        private int _balance;  //ref operatörü propertynin back fieldı olmadan kullanılamaz.
+
+        public int Balance
+        {
+            get => _balance;
+            set => _balance = value;
+        }
 
         public void Deposit(int amount)
         {
-            lock (padlock)
-            {
-                Balance += amount;
-            }
+            Interlocked.Add(ref _balance, amount);
+            
+         
         }
 
         public void Withdraw(int amount)
         {
-            lock (padlock)
-            {
-              Balance -= amount;
-            }
+            Interlocked.Add(ref _balance, -amount);
         }
     }
     class Program
