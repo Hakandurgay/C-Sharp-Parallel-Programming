@@ -1,5 +1,5 @@
 acquire=elde etmek
-concurrent=kesiþen
+concurrent=kesiþen, eþ zamanlý
 clumsy= sakar, beceriksiz
 convenient=müsait, münasip
 canonical=geleneklere uygun

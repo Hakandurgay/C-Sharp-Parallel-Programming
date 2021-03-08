@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Messaging;
 using System.Text;
@@ -17,7 +18,7 @@ namespace ParallelProgramming
         //farklı programlarda mutexler paylaşılabilir. Locklardan ayıran özelliği budur
         //lock mekanizmasına göre 50 kat daha yavaştır
         // ileri okuma için https://doganakyurek.blogspot.com/2016/08/multi-threading-serisi-ii.html adresine bakılabilir
-        public int Balance  { get; set; }
+        public int Balance  { get; set; } 
 
         public void Deposit(int amount)
         {
@@ -36,75 +37,58 @@ namespace ParallelProgramming
     }
     class Program
     {
+       static Random random=new Random();
+        //çoklu okuma ve yazma işlemlerine özel olarak tasarlanmış lock sınıfıdır.
+        //
+        static ReaderWriterLockSlim padLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion); //
+      //  static ReaderWriterLockSlim padLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion); yazılarak iç içe iki tane lock kullanılmak isteniyorsa yazılır 
         static void Main(string[] args)
         {
-            var ba = new BankAccount();
-            var ba2 = new BankAccount();
+            int x = 0;
             var tasks=new List<Task>();
-            
-            Mutex mutex=new Mutex();  //mutex thread yönetim şekillerinden biridir. lock'tan farkı birden fazla processte çalışabilmesi
-            Mutex mutex2 = new Mutex();
             for (int i = 0; i < 10; i++)
             {
-                tasks.Add(Task.Factory.StartNew(() =>
+                tasks.Add(Task.Factory.StartNew((() =>
                 {
-                    for (int j = 0; j < 1000; j++)
-                    {
-                        bool haveLock= mutex.WaitOne();
-                        try
-                        {
-                            ba.Deposit(1);
+                    padLock.EnterReadLock();
 
-                        }
-                        finally
-                        {
-                            if(haveLock)
-                                mutex.ReleaseMutex();  //mutex'in sonlanması için releasemutex çağrılmalı
-                        }
-                    }
-                }));
+                    //eğer bir şey okunduktan sonra değiştirilmesi istenirse padlock.enterWriteLock yazılırsa readlock kapatılmadığı için hata verir.
+                    //okunup değiştirilmesi isteniyorsa 
+                    //  padLock.EnterUpgradeableReadLock();  yazılır
+                    Console.WriteLine($"entered read lock, x={x}");
+                    Thread.Sleep(5000);
+                    padLock.ExitReadLock();
 
-                tasks.Add(Task.Factory.StartNew(() =>
-                {
-                    for (int j = 0; j < 1000; j++)
-                    {
-                        bool haveLock = mutex2.WaitOne();
-                        try
-                        {
-                            ba2.Deposit(1);
-
-                        }
-                        finally
-                        {
-                            if (haveLock)
-                                mutex2.ReleaseMutex();
-                        }
-                    }
-                }));
-                tasks.Add(Task.Factory.StartNew(()=>
-                {
-                    for (int j = 0; j < 1000; j++)
-                    {
-                        bool haveLock = WaitHandle.WaitAll(new[] {mutex, mutex2}); //iki mutex de boşa çıkana kadar bekledikten sonra işlem yapar
-                        try
-                        {
-                            ba.Transfer(ba2, 1);
-                        }
-                        finally
-                        {
-                            if (haveLock)
-                            {
-                                mutex.ReleaseMutex();
-                                mutex2.ReleaseMutex();
-                            }
-                        }
-                    }
-                }));
+                    //padLock.ExitUpgradeableReadLock();
+                    Console.WriteLine($"exited read lock, x={x}");
+                })));
             }
 
-            Task.WaitAll(tasks.ToArray());
-            Console.WriteLine($"final balance is ba : {ba.Balance}");
-            Console.WriteLine($"final balance is ba2: {ba2.Balance}");
+            try
+            {
+                Task.WaitAll(tasks.ToArray());
+            }
+            catch (AggregateException ae)
+            {
+                ae.Handle(e =>
+                {
+                    Console.WriteLine(e);
+                    return true;
+                });
+            }
+
+            while (true)
+            {
+                Console.ReadKey();
+                padLock.EnterWriteLock();
+                Console.Write("write lock acquired");
+                int newValue = random.Next();
+                x = newValue;
+                Console.WriteLine($"set x={x}");
+                padLock.ExitReadLock();
+                Console.WriteLine("write lock released ");
+            }
+
         }
     }
 }
