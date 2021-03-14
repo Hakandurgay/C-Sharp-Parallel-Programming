@@ -17,19 +17,25 @@ namespace ParallelProgramming
     
         static void Main(string[] args)
         {
-            var q= new ConcurrentQueue<int>();
-            q.Enqueue(1);
-            q.Enqueue(2);
+            var stack=new ConcurrentStack<int>();
+
+            stack.Push(1);
+            stack.Push(2);
+            stack.Push(3);
+            stack.Push(4);
 
             int result;
-            if (q.TryDequeue(out result))
-            {
-                Console.WriteLine($"removed element {result}");
-            }
+            if(stack.TryPeek(out result))
+                Console.WriteLine($"{result} is on top");
 
-            if (q.TryPeek(out result))
+            if(stack.TryPop(out result))
+                Console.WriteLine($"popped {result}");
+
+            var items = new int[5];
+            if (stack.TryPopRange(items, 0, 5) > 0) //trypoprange verilen ilk parametredeki indexten itibaren ve ikinci parametreye kadar siler. kaç tane sildiğini döndüren int değeri döndürür. // burada 3 yani
             {
-                Console.WriteLine($"front element is {result}");
+                var text = string.Join(", ", items.Select(i => i.ToString()));
+                Console.WriteLine($"popped these items: {text}");
             }
         }
     }
