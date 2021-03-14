@@ -17,26 +17,40 @@ namespace ParallelProgramming
     
         static void Main(string[] args)
         {
-            var stack=new ConcurrentStack<int>();
+            // TPL'de concurrentList yok. bunun yerine ConcurrentBag var
+            //stack lifo
+            //queue fifo
+            //bag: unorder
 
-            stack.Push(1);
-            stack.Push(2);
-            stack.Push(3);
-            stack.Push(4);
-
-            int result;
-            if(stack.TryPeek(out result))
-                Console.WriteLine($"{result} is on top");
-
-            if(stack.TryPop(out result))
-                Console.WriteLine($"popped {result}");
-
-            var items = new int[5];
-            if (stack.TryPopRange(items, 0, 5) > 0) //trypoprange verilen ilk parametredeki indexten itibaren ve ikinci parametreye kadar siler. kaç tane sildiğini döndüren int değeri döndürür. // burada 3 yani
+            var bag=new ConcurrentBag<int>();
+            var tasks= new List<Task>();
+            for (int i = 0; i < 10; i++)
             {
-                var text = string.Join(", ", items.Select(i => i.ToString()));
-                Console.WriteLine($"popped these items: {text}");
+                var i1 = i;
+                
+                tasks.Add(Task.Factory.StartNew(()=>
+                {
+                    bag.Add(i1);
+                    Console.WriteLine($"{Task.CurrentId} has added {i1}");
+                    int result;
+                    if (bag.TryPeek(out result))
+                    {
+                        Console.WriteLine($"{Task.CurrentId} has peeked the value {result}");
+                    }
+                }));
             }
+
+            Task.WaitAll(tasks.ToArray());
+
+            //sıra yok düzensiz oluyor her şey ama hızlı
+
+            int last;
+            if (bag.TryTake(out last))
+            {
+                Console.WriteLine($"i got {last}");
+            }
+
+
         }
     }
 }
