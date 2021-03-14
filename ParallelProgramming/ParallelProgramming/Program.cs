@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -11,84 +12,47 @@ using System.Xml;
 
 namespace ParallelProgramming
 {
+    //concurrentdictionary normal dictionary'nin thread safe şeklidir.
+    //Thread Safe; birden çok thread’in tekbir kaynağı aynı anda kullanabilmesi/erişebilmesi durumlarında ortaya çıkabilecek tutarsızlıklar neticesinde üretilecek olası hatalara karşı o anki
+    //thread’in kaynağını güvenceye alan ve bunu o kaynağı kullanan tüm threadler için sağlayan bir konsepttir.
 
-    public class BankAccount
-    {
-        //mutexler işletim sistemleri yapıları gibi farklı global processlerde yani farklı processler üzerinde çalışabilir ve bilgisayar ve uygulama seviyesinde lock mekanizması sunar.
-        //farklı programlarda mutexler paylaşılabilir. Locklardan ayıran özelliği budur
-        //lock mekanizmasına göre 50 kat daha yavaştır
-        // ileri okuma için https://doganakyurek.blogspot.com/2016/08/multi-threading-serisi-ii.html adresine bakılabilir
-        public int Balance  { get; set; } 
-
-        public void Deposit(int amount)
-        {
-            Balance += amount;
-        }
-        public void Withdraw(int amount)
-        {
-            Balance -= amount;
-        }
-
-        public void Transfer(BankAccount where, int amount)
-        {
-            Balance -= amount;
-            where.Balance += amount;
-        }
-    }
     class Program
     {
-       static Random random=new Random();
-        //çoklu okuma ve yazma işlemlerine özel olarak tasarlanmış lock sınıfıdır.
-        //
-        static ReaderWriterLockSlim padLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion); //
-      //  static ReaderWriterLockSlim padLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion); yazılarak iç içe iki tane lock kullanılmak isteniyorsa yazılır 
+        private static ConcurrentDictionary<string,string> capitals=new ConcurrentDictionary<string, string>();
+
+        public static void AddParis()
+        {
+            bool success = capitals.TryAdd("France", "Paris"); //normal add metodununn yerine tryadd kullanır. bu method bool türündendir eğer eklenmiş olan veri daha önce varsa false döne
+            string who=Task.CurrentId.HasValue ?  ("Task "+ Task.CurrentId) : "Main Thread";  //currentid nullabledır.
+            Console.WriteLine($"{who} {(success ? "added" : "did not add")} the element"); //ilk çağrımızda eklencek ama ikinci çağrışımızda eklenmicek
+        }
         static void Main(string[] args)
         {
-            int x = 0;
-            var tasks=new List<Task>();
-            for (int i = 0; i < 10; i++)
+
+            Task.Factory.StartNew(AddParis).Wait(); //oluşturduğumuz thread
+            AddParis(); //main thread
+
+             capitals["Russia"] = "Leningrad";   //update işlemini bu şekilde de yapabilir ama concurrentdictionary'nin kendine has metodu var
+            capitals.AddOrUpdate("Russia", "Moscow", (k, old) => old + "--> Moscow");
+            //ilk parametreye önceden atanmış bir değer var mı diye bakar yoksa atar varsa update yapar
+            Console.WriteLine($"the capital of russia is {capitals["Russia"]}");
+
+
+             //capitals["Sweeden"] = "Uppsala";
+            var capOfSweeden = capitals.GetOrAdd("Sweeden", "Stockholm"); //eğer önceden atanmış varsa onu getirir yoksa stockholm yapar
+            Console.WriteLine($"the cap of sweeden is {capOfSweeden}");
+
+            const string toRemove = "Russia";
+            string removed;
+            bool didRemove = capitals.TryRemove(toRemove, out removed);
+            if (didRemove)
             {
-                tasks.Add(Task.Factory.StartNew((() =>
-                {
-                    padLock.EnterReadLock();
-
-                    //eğer bir şey okunduktan sonra değiştirilmesi istenirse padlock.enterWriteLock yazılırsa readlock kapatılmadığı için hata verir.
-                    //okunup değiştirilmesi isteniyorsa 
-                    //  padLock.EnterUpgradeableReadLock();  yazılır
-                    Console.WriteLine($"entered read lock, x={x}");
-                    Thread.Sleep(5000);
-                    padLock.ExitReadLock();
-
-                    //padLock.ExitUpgradeableReadLock();
-                    Console.WriteLine($"exited read lock, x={x}");
-                })));
+                Console.WriteLine($"we just removed {removed}");
             }
-
-            try
+            else
             {
-                Task.WaitAll(tasks.ToArray());
+                Console.WriteLine($"failed to remove the capital of {toRemove}");
             }
-            catch (AggregateException ae)
-            {
-                ae.Handle(e =>
-                {
-                    Console.WriteLine(e);
-                    return true;
-                });
-            }
-
-            while (true)
-            {
-                Console.ReadKey();
-                padLock.EnterWriteLock();
-                Console.Write("write lock acquired");
-                int newValue = random.Next();
-                x = newValue;
-                Console.WriteLine($"set x={x}");
-                padLock.ExitReadLock();
-                Console.WriteLine("write lock released ");
-            }
-
         }
     }
 }

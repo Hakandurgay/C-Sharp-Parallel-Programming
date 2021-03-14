@@ -11,3 +11,4 @@ primitive= ilkel
 invocation=çaðýrma 
 yield=teslim olmak
 essentially=esasen
+assumption=farzetme
