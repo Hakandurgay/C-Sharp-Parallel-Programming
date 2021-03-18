@@ -17,38 +17,46 @@ namespace ParallelProgramming
     
         static void Main(string[] args)
         {
-            // TPL'de concurrentList yok. bunun yerine ConcurrentBag var
-            //stack lifo
-            //queue fifo
-            //bag: unorder
+            #region continueWith Kullanımı
 
-            var bag=new ConcurrentBag<int>();
-            var tasks= new List<Task>();
-            for (int i = 0; i < 10; i++)
+            var task = Task.Factory.StartNew(() =>
             {
-                var i1 = i;
-                
-                tasks.Add(Task.Factory.StartNew(()=>
-                {
-                    bag.Add(i1);
-                    Console.WriteLine($"{Task.CurrentId} has added {i1}");
-                    int result;
-                    if (bag.TryPeek(out result))
-                    {
-                        Console.WriteLine($"{Task.CurrentId} has peeked the value {result}");
-                    }
-                }));
-            }
-
-            Task.WaitAll(tasks.ToArray());
-
-            //sıra yok düzensiz oluyor her şey ama hızlı
-
-            int last;
-            if (bag.TryTake(out last))
+                Console.WriteLine("boiling water");
+            });
+            var task2 = task.ContinueWith(t =>
             {
-                Console.WriteLine($"i got {last}");
-            }
+                Console.WriteLine($"completed task {t.Id}");  //ilk task biter bitmek sonraki task ile devam eder
+            });
+            task2.Wait();
+
+            #endregion
+
+            #region continuewhenall kullanımı
+            //var taskk = Task.Factory.StartNew(() => "task 1");
+            //var taskk2 = Task.Factory.StartNew(() => "task 2");
+
+            ////continuewhenall bütün taskleri bekler
+            //var taskk3 = Task.Factory.ContinueWhenAll(new[] { taskk, taskk2 }, tasks =>
+            //{
+            //    Console.WriteLine("tasks completed");
+            //    foreach (var t in tasks)
+            //    {
+            //        Console.WriteLine("-- " + t.Result);
+            //    }
+            //});
+
+            #endregion
+
+            var taskk = Task.Factory.StartNew(() => "task 1");
+            var taskk2 = Task.Factory.StartNew(() => "task 2");
+
+            //continuewhenany bir herhangi bir taskin bitmesini bekler
+            var taskk3 = Task.Factory.ContinueWhenAny(new[] { taskk, taskk2 }, t =>
+            {
+                Console.WriteLine("tasks completed");
+            
+                    Console.WriteLine("-- " + t.Result);
+            });
 
 
         }
