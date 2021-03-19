@@ -12,52 +12,77 @@ using System.Xml;
 
 namespace ParallelProgramming
 {
-   
-    class Program{
-    
+
+    class Program
+    {
+
         static void Main(string[] args)
         {
-            #region continueWith Kullanımı
+            #region attached child task
 
-            var task = Task.Factory.StartNew(() =>
+            var parent = new Task(() =>
             {
-                Console.WriteLine("boiling water");
+               
+                var child = new Task(() =>
+                {
+                    Console.WriteLine("child task starting");
+                    Thread.Sleep(3000);
+                    Console.WriteLine("child task finishing");
+                    throw new Exception();
+                }, TaskCreationOptions.AttachedToParent);  //bu eklenerek parent taskin child taski beklemesi sağlanır
+
+                var completionHandler = child.ContinueWith(t =>
+                {
+                    Console.WriteLine($"good, task {t.Id}'s state is {t.Status}");
+                }, TaskContinuationOptions.AttachedToParent | TaskContinuationOptions.OnlyOnRanToCompletion);  //bu şekilde birden fazla koşul verebilir. burası sadece task başarılı olursa çalıır
+                var failHandler = child.ContinueWith(t =>
+                {
+                    Console.WriteLine($"bad, task {t.Id}'s state is {t.Status}");
+                }, TaskContinuationOptions.AttachedToParent | TaskContinuationOptions.OnlyOnFaulted);  //hataya düşerse burası çalışır
+
+
+                child.Start();
             });
-            var task2 = task.ContinueWith(t =>
+            parent.Start();
+            try
             {
-                Console.WriteLine($"completed task {t.Id}");  //ilk task biter bitmek sonraki task ile devam eder
-            });
-            task2.Wait();
+                parent.Wait();
+            }
+            catch (AggregateException ae)
+            {
+                ae.Handle(e => true);
+            }
+
 
             #endregion
 
-            #region continuewhenall kullanımı
-            //var taskk = Task.Factory.StartNew(() => "task 1");
-            //var taskk2 = Task.Factory.StartNew(() => "task 2");
+            #region detached child task
+            /*      //bu örnekte farklı çıktılar oluşmasının sebebi parent task in child taskin bitmesini beklememesi
 
-            ////continuewhenall bütün taskleri bekler
-            //var taskk3 = Task.Factory.ContinueWhenAll(new[] { taskk, taskk2 }, tasks =>
-            //{
-            //    Console.WriteLine("tasks completed");
-            //    foreach (var t in tasks)
-            //    {
-            //        Console.WriteLine("-- " + t.Result);
-            //    }
-            //});
-
+                  var parent = new Task(() =>
+                  {
+                      //bu şekilde oluşturmaya detached denir.bu durumda child task'in diğer taskin içinde olması veya farklı yerde olması farketmez.
+                      //parent'ından bağımsız olarak execute edilir.
+                      //parent childi beklemez, parentin statusu childa bağlı değildir, child task tarafdından fırlatılan exceptionlar parent tarafından bağımsız
+                      var child = new Task(() =>
+                      {
+                          Console.WriteLine("child task starting");
+                          Thread.Sleep(3000);
+                          Console.WriteLine("child task finishing");
+                      });
+                      child.Start();
+                  });
+                  parent.Start();
+                  try
+                  {
+                      parent.Wait();
+                  }
+                  catch (AggregateException ae)
+                  {
+                      ae.Handle(e => true);
+                  }      
+            */
             #endregion
-
-            var taskk = Task.Factory.StartNew(() => "task 1");
-            var taskk2 = Task.Factory.StartNew(() => "task 2");
-
-            //continuewhenany bir herhangi bir taskin bitmesini bekler
-            var taskk3 = Task.Factory.ContinueWhenAny(new[] { taskk, taskk2 }, t =>
-            {
-                Console.WriteLine("tasks completed");
-            
-                    Console.WriteLine("-- " + t.Result);
-            });
-
 
         }
     }

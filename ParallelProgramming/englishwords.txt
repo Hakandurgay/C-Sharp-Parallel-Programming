@@ -14,3 +14,4 @@ essentially=esasen
 assumption=farzetme
 bizarre=acayip, tuhaf
 overflow=coþmak, taþmak
+combine=birleþtirmek
