@@ -15,75 +15,44 @@ namespace ParallelProgramming
 
     class Program
     {
+        //2 burada kaç tane participant olduğunu söylüyor yani water and cup.
+        //phase cup or water
+        static Barrier barrier=new Barrier(2, b =>
+        {
+            Console.WriteLine($"phase {b.CurrentPhaseNumber} is finished");
+        });
 
+        public static void Water()
+        {
+            Console.WriteLine("putting the kettle on (takes a bit longer)");
+            Thread.Sleep(2000);
+            barrier.SignalAndWait();
+            Console.WriteLine("pouring water into cup");
+            barrier.SignalAndWait();
+            Console.WriteLine("putting the kettle away");
+
+        }
+
+        public static void Cup()
+        {
+            Console.WriteLine("finding the cup of the (fast)");
+            barrier.SignalAndWait();
+            Console.WriteLine("adding tea");
+            barrier.SignalAndWait();
+            Console.WriteLine("adding sugar");
+
+        }
         static void Main(string[] args)
         {
-            #region attached child task
+            var water = Task.Factory.StartNew(Water);
+            var cup = Task.Factory.StartNew(Cup);
 
-            var parent = new Task(() =>
+            var tea = Task.Factory.ContinueWhenAll(new[] {water, cup}, tasks =>
             {
-               
-                var child = new Task(() =>
-                {
-                    Console.WriteLine("child task starting");
-                    Thread.Sleep(3000);
-                    Console.WriteLine("child task finishing");
-                    throw new Exception();
-                }, TaskCreationOptions.AttachedToParent);  //bu eklenerek parent taskin child taski beklemesi sağlanır
-
-                var completionHandler = child.ContinueWith(t =>
-                {
-                    Console.WriteLine($"good, task {t.Id}'s state is {t.Status}");
-                }, TaskContinuationOptions.AttachedToParent | TaskContinuationOptions.OnlyOnRanToCompletion);  //bu şekilde birden fazla koşul verebilir. burası sadece task başarılı olursa çalıır
-                var failHandler = child.ContinueWith(t =>
-                {
-                    Console.WriteLine($"bad, task {t.Id}'s state is {t.Status}");
-                }, TaskContinuationOptions.AttachedToParent | TaskContinuationOptions.OnlyOnFaulted);  //hataya düşerse burası çalışır
-
-
-                child.Start();
+                Console.WriteLine("enjoy your cup of the");
             });
-            parent.Start();
-            try
-            {
-                parent.Wait();
-            }
-            catch (AggregateException ae)
-            {
-                ae.Handle(e => true);
-            }
-
-
-            #endregion
-
-            #region detached child task
-            /*      //bu örnekte farklı çıktılar oluşmasının sebebi parent task in child taskin bitmesini beklememesi
-
-                  var parent = new Task(() =>
-                  {
-                      //bu şekilde oluşturmaya detached denir.bu durumda child task'in diğer taskin içinde olması veya farklı yerde olması farketmez.
-                      //parent'ından bağımsız olarak execute edilir.
-                      //parent childi beklemez, parentin statusu childa bağlı değildir, child task tarafdından fırlatılan exceptionlar parent tarafından bağımsız
-                      var child = new Task(() =>
-                      {
-                          Console.WriteLine("child task starting");
-                          Thread.Sleep(3000);
-                          Console.WriteLine("child task finishing");
-                      });
-                      child.Start();
-                  });
-                  parent.Start();
-                  try
-                  {
-                      parent.Wait();
-                  }
-                  catch (AggregateException ae)
-                  {
-                      ae.Handle(e => true);
-                  }      
-            */
-            #endregion
-
+            tea.Wait();
+             
         }
     }
 }
