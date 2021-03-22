@@ -15,44 +15,28 @@ namespace ParallelProgramming
 
     class Program
     {
-        //2 burada kaç tane participant olduğunu söylüyor yani water and cup.
-        //phase cup or water
-        static Barrier barrier=new Barrier(2, b =>
-        {
-            Console.WriteLine($"phase {b.CurrentPhaseNumber} is finished");
-        });
-
-        public static void Water()
-        {
-            Console.WriteLine("putting the kettle on (takes a bit longer)");
-            Thread.Sleep(2000);
-            barrier.SignalAndWait();
-            Console.WriteLine("pouring water into cup");
-            barrier.SignalAndWait();
-            Console.WriteLine("putting the kettle away");
-
-        }
-
-        public static void Cup()
-        {
-            Console.WriteLine("finding the cup of the (fast)");
-            barrier.SignalAndWait();
-            Console.WriteLine("adding tea");
-            barrier.SignalAndWait();
-            Console.WriteLine("adding sugar");
-
-        }
+    
+        static CountdownEvent cte=new CountdownEvent(5);
         static void Main(string[] args)
         {
-            var water = Task.Factory.StartNew(Water);
-            var cup = Task.Factory.StartNew(Cup);
-
-            var tea = Task.Factory.ContinueWhenAll(new[] {water, cup}, tasks =>
+            for (int i = 0; i < 5; i++)
             {
-                Console.WriteLine("enjoy your cup of the");
+                Task.Factory.StartNew((() =>
+                {
+                    Console.WriteLine($"entering task {Task.CurrentId}");
+                    Thread.Sleep(2000);
+                    cte.Signal(); //Barrierdeki signal and wait metodu yerine burada ayrı ayrı olarak var. her signal metodu çalıştığında 5'ten bir düşer. 
+                    Console.WriteLine($"exiting task {Task.CurrentId}");
+                }));
+            }
+
+            var finalTask = Task.Factory.StartNew(() =>
+            {
+                Console.WriteLine($"waiting for other tasks to complete in {Task.CurrentId}");
+                cte.Wait();  //5, sıfır olana kadar bekler. 
+                Console.WriteLine("all tasks completed");
             });
-            tea.Wait();
-             
+            finalTask.Wait();
         }
     }
 }
