@@ -19,26 +19,32 @@ namespace ParallelProgramming
 
         static void Main(string[] args)
         {
-          var evt=new ManualResetEventSlim(false);
+          var evt=new AutoResetEvent(false);
 
           Task.Factory.StartNew(() =>
           {
               Console.WriteLine("boiling water");
               //counter 1 olur
-              evt.Set();  //barrierde ve countdownevette counter geriye doğru sıfıra kadar akıyordu. manualresetevet'te 0'dan bire doğru gidiyor.
+              evt.Set(); 
               //true işaretler
           });
           var makeTea = Task.Factory.StartNew(() =>
           {
               Console.WriteLine("waiting for water");
               //counter 1 olana kadar bekler ondan sonra aşağıyı çalıştır
-              evt.Wait(); //true devam eder.
+              evt.WaitOne(); //tekrar false 'a döndürür. 
               Console.WriteLine("here is your tea");
-              evt.Wait(); 
-              evt.Wait(); 
-              evt.Wait(); 
-              evt.Wait(); 
-              evt.Wait(); //buraya istediğimiz kadar wait yazalım yine de beklemez çünkü true olarak set edildi
+              var ok = evt.WaitOne(1000); //hala false
+              evt.Set();
+              if (ok)
+              {
+                  Console.WriteLine("enjoy your tea");
+              }
+              else
+              {
+                  Console.WriteLine("no tea");
+              }
+
           });
           makeTea.Wait();
         }
