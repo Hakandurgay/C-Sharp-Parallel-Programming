@@ -16,29 +16,40 @@ namespace ParallelProgramming
     class Program
     {
 
+        public static void Demo()
+        {
 
+            var cts=new CancellationTokenSource();
+
+            ParallelOptions po=new ParallelOptions();
+            po.CancellationToken = cts.Token;
+           var result= Parallel.For(0, 20,po ,(x, state) =>  //state bazı özelleştirmeler sağlar
+            {
+                Console.WriteLine($"{x}[{Task.CurrentId}]\t");
+                if (x == 10)
+                {
+                  //  throw new Exception();
+                   // state.Stop();  //x = 10 olduğunda paralel işlemleri durdurur
+                //      state.Break(); //stopa benzer ama x=10 u görünce sonraki iterasyonları durdurur. stop'tan daha az acil
+                cts.Cancel();
+                }
+            });
+           Console.WriteLine();
+           Console.WriteLine($"was loop completed?{result.IsCompleted} "); //tamamlanmışsa true eğer durdurulmuşsa veya hata fırlatılmışsa false
+           if(result.LowestBreakIteration.HasValue)
+               Console.WriteLine($"lowest break iteration is {result.LowestBreakIteration}");
+        }
         static void Main(string[] args)
         {
-            //action bir delegate türüdür. değer döndürmeyen metodu temsil eder.
-          var a= new Action((() => Console.WriteLine($"First {Task.CurrentId}")));
-          var b= new Action((() => Console.WriteLine($"second {Task.CurrentId}")));
-          var c= new Action((() => Console.WriteLine($"third {Task.CurrentId}")));
+            try
+            {
+                Demo();
+            }
+            catch(OperationCanceledException)
+            {
 
-          Parallel.Invoke(a,b,c); //üçünü aynı anda çalıştırır
-
-          ////////////////
-
-          Parallel.For(1, 11, i =>
-          {
-              Console.WriteLine($"{i * i}\t");
-          });
-
-          //////////////////
-          string[] words = {"selam", "ben", "hakan"};
-          Parallel.ForEach(words, word =>
-          {
-              Console.WriteLine($"{word} has length {word.Length} (task {Task.CurrentId})");
-          });
+            }
+         
         }
     }
 }
