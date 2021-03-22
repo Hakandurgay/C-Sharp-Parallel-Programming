@@ -16,3 +16,4 @@ bizarre=acayip, tuhaf
 overflow=coþmak, taþmak
 combine=birleþtirmek
 participant=katýlýmcý, iþtirakçi
+lump= bir grupta toplamak

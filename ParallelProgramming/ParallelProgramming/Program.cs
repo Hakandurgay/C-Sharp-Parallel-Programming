@@ -16,27 +16,31 @@ namespace ParallelProgramming
     class Program
     {
     
-        static CountdownEvent cte=new CountdownEvent(5);
+
         static void Main(string[] args)
         {
-            for (int i = 0; i < 5; i++)
-            {
-                Task.Factory.StartNew((() =>
-                {
-                    Console.WriteLine($"entering task {Task.CurrentId}");
-                    Thread.Sleep(2000);
-                    cte.Signal(); //Barrierdeki signal and wait metodu yerine burada ayrı ayrı olarak var. her signal metodu çalıştığında 5'ten bir düşer. 
-                    Console.WriteLine($"exiting task {Task.CurrentId}");
-                }));
-            }
+          var evt=new ManualResetEventSlim(false);
 
-            var finalTask = Task.Factory.StartNew(() =>
-            {
-                Console.WriteLine($"waiting for other tasks to complete in {Task.CurrentId}");
-                cte.Wait();  //5, sıfır olana kadar bekler. 
-                Console.WriteLine("all tasks completed");
-            });
-            finalTask.Wait();
+          Task.Factory.StartNew(() =>
+          {
+              Console.WriteLine("boiling water");
+              //counter 1 olur
+              evt.Set();  //barrierde ve countdownevette counter geriye doğru sıfıra kadar akıyordu. manualresetevet'te 0'dan bire doğru gidiyor.
+              //true işaretler
+          });
+          var makeTea = Task.Factory.StartNew(() =>
+          {
+              Console.WriteLine("waiting for water");
+              //counter 1 olana kadar bekler ondan sonra aşağıyı çalıştır
+              evt.Wait(); //true devam eder.
+              Console.WriteLine("here is your tea");
+              evt.Wait(); 
+              evt.Wait(); 
+              evt.Wait(); 
+              evt.Wait(); 
+              evt.Wait(); //buraya istediğimiz kadar wait yazalım yine de beklemez çünkü true olarak set edildi
+          });
+          makeTea.Wait();
         }
     }
 }
