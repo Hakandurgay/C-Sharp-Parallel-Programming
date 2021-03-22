@@ -15,38 +15,32 @@ namespace ParallelProgramming
 
     class Program
     {
-    
+
 
         static void Main(string[] args)
         {
-          var evt=new AutoResetEvent(false);
+            //diğer senkronizasyon türlerinde counter ya arttırma ya da azaltma şeklinde çalışıyordu.
+            //semaphorelarda iki şekilde de olabilir
+            var semaphore=new SemaphoreSlim(2,10);//2, diğerlerindeki gibi number of requesti belirtiyor. yani eş zamanlı iki task
+            //10 ise aynı anda çalışabailecek task sayısını ifade eder.
+            for (int i = 0; i < 20; i++)
+            {
+                Task.Factory.StartNew(() =>
+                {
+                    Console.WriteLine($"entering task {Task.CurrentId}");
+                    semaphore.Wait(); //releasecount-- azalır
 
-          Task.Factory.StartNew(() =>
-          {
-              Console.WriteLine("boiling water");
-              //counter 1 olur
-              evt.Set(); 
-              //true işaretler
-          });
-          var makeTea = Task.Factory.StartNew(() =>
-          {
-              Console.WriteLine("waiting for water");
-              //counter 1 olana kadar bekler ondan sonra aşağıyı çalıştır
-              evt.WaitOne(); //tekrar false 'a döndürür. 
-              Console.WriteLine("here is your tea");
-              var ok = evt.WaitOne(1000); //hala false
-              evt.Set();
-              if (ok)
-              {
-                  Console.WriteLine("enjoy your tea");
-              }
-              else
-              {
-                  Console.WriteLine("no tea");
-              }
+                    Console.WriteLine($"processing task {Task.CurrentId}");
+                });
+            }
 
-          });
-          makeTea.Wait();
+            while (semaphore.CurrentCount <= 2)
+            {
+                Console.WriteLine($"Semaphore count : {semaphore.CurrentCount}");
+                Console.ReadKey();
+                semaphore.Release(2); //relasecount+=2
+                //düğmeye her basıldığında yukarıdaki iki olan sayı iki artacak
+            }
         }
     }
 }
