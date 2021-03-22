@@ -18,3 +18,6 @@ combine=birleştirmek
 participant=katılımcı, iştirakçi
 lump= bir grupta toplamak
 contention=yarışma, münakaşa
+beware=çekinmek
+utility=yardımcı yazılım, işe yarar şey
+associate=ilişkilendirmek

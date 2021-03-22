@@ -19,28 +19,26 @@ namespace ParallelProgramming
 
         static void Main(string[] args)
         {
-            //diğer senkronizasyon türlerinde counter ya arttırma ya da azaltma şeklinde çalışıyordu.
-            //semaphorelarda iki şekilde de olabilir
-            var semaphore=new SemaphoreSlim(2,10);//2, diğerlerindeki gibi number of requesti belirtiyor. yani eş zamanlı iki task
-            //10 ise aynı anda çalışabailecek task sayısını ifade eder.
-            for (int i = 0; i < 20; i++)
-            {
-                Task.Factory.StartNew(() =>
-                {
-                    Console.WriteLine($"entering task {Task.CurrentId}");
-                    semaphore.Wait(); //releasecount-- azalır
+            //action bir delegate türüdür. değer döndürmeyen metodu temsil eder.
+          var a= new Action((() => Console.WriteLine($"First {Task.CurrentId}")));
+          var b= new Action((() => Console.WriteLine($"second {Task.CurrentId}")));
+          var c= new Action((() => Console.WriteLine($"third {Task.CurrentId}")));
 
-                    Console.WriteLine($"processing task {Task.CurrentId}");
-                });
-            }
+          Parallel.Invoke(a,b,c); //üçünü aynı anda çalıştırır
 
-            while (semaphore.CurrentCount <= 2)
-            {
-                Console.WriteLine($"Semaphore count : {semaphore.CurrentCount}");
-                Console.ReadKey();
-                semaphore.Release(2); //relasecount+=2
-                //düğmeye her basıldığında yukarıdaki iki olan sayı iki artacak
-            }
+          ////////////////
+
+          Parallel.For(1, 11, i =>
+          {
+              Console.WriteLine($"{i * i}\t");
+          });
+
+          //////////////////
+          string[] words = {"selam", "ben", "hakan"};
+          Parallel.ForEach(words, word =>
+          {
+              Console.WriteLine($"{word} has length {word.Length} (task {Task.CurrentId})");
+          });
         }
     }
 }
