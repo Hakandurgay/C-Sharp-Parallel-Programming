@@ -17,37 +17,29 @@ namespace ParallelProgramming
 
   public  class Program
     {
-        [Benchmark] //benchmark işlemle ilgili veriler veriyor
-        public void SquareEachValue()
-        {
-            const int count = 100000;
-            var values = Enumerable.Range(0, count);
-            var results = new int[count];
-            Parallel.ForEach(values, x => { results[x] = (int)Math.Pow(x, 2); }); //her seferinde delegate ile işlemler yapıldığı için çok maliyetli bu şekilde yapmak
-
-        }
-        [Benchmark]
-        public void SquareEachValueChunked()
-        {
-            const int count = 100000;
-            var values = Enumerable.Range(0, count);
-            var results = new int[count];
-            //countu böler
-            var part = Partitioner.Create(0, count, 10000); //bu şekilde yapmak daha hızlı sonuç verir
-            Parallel.ForEach(part, range =>
-            {
-                for (int i = 0; i < range.Item2; i++)
-                {
-                    results[i] = (int) Math.Pow(i, 2);
-                }
-            });
-
-
-        }
+      
         static void Main(string[] args)
         {
-            var summary = BenchmarkRunner.Run<Program>();
-            Console.WriteLine(summary);
+            const int count = 50;
+            var items = Enumerable.Range(1, count).ToArray();
+            var results = new int[count];
+
+            //AsParallel extension metodu kullanılarak paralel linq sorgusu oluşturulur
+            items.AsParallel().ForAll(x =>  //forall geriye değer döndürmez 
+            {
+                int newValue = x * x * x;
+                Console.WriteLine($"{newValue} ({Task.CurrentId})\t");
+                results[x - 1] = newValue;
+            });
+            Console.WriteLine();
+            Console.WriteLine();
+
+            var cubes = items.AsParallel().AsOrdered().Select(x => x * x * x);  //asordered kullanılarak sıra sağlanır
+            foreach (var i in cubes)
+            {
+                Console.WriteLine($"{i}\t");
+            }
+            Console.WriteLine();
         }
     }
 }
