@@ -21,3 +21,4 @@ contention=yarýþma, münakaþa
 beware=çekinmek
 utility=yardýmcý yazýlým, iþe yarar þey
 associate=iliþkilendirmek
+partition= bölme, parçalama

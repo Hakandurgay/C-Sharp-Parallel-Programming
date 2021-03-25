@@ -9,47 +9,45 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
+using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Running;
 
 namespace ParallelProgramming
 {
 
-    class Program
+  public  class Program
     {
-
-        public static void Demo()
+        [Benchmark] //benchmark işlemle ilgili veriler veriyor
+        public void SquareEachValue()
         {
+            const int count = 100000;
+            var values = Enumerable.Range(0, count);
+            var results = new int[count];
+            Parallel.ForEach(values, x => { results[x] = (int)Math.Pow(x, 2); }); //her seferinde delegate ile işlemler yapıldığı için çok maliyetli bu şekilde yapmak
 
-            var cts=new CancellationTokenSource();
-
-            ParallelOptions po=new ParallelOptions();
-            po.CancellationToken = cts.Token;
-           var result= Parallel.For(0, 20,po ,(x, state) =>  //state bazı özelleştirmeler sağlar
+        }
+        [Benchmark]
+        public void SquareEachValueChunked()
+        {
+            const int count = 100000;
+            var values = Enumerable.Range(0, count);
+            var results = new int[count];
+            //countu böler
+            var part = Partitioner.Create(0, count, 10000); //bu şekilde yapmak daha hızlı sonuç verir
+            Parallel.ForEach(part, range =>
             {
-                Console.WriteLine($"{x}[{Task.CurrentId}]\t");
-                if (x == 10)
+                for (int i = 0; i < range.Item2; i++)
                 {
-                  //  throw new Exception();
-                   // state.Stop();  //x = 10 olduğunda paralel işlemleri durdurur
-                //      state.Break(); //stopa benzer ama x=10 u görünce sonraki iterasyonları durdurur. stop'tan daha az acil
-                cts.Cancel();
+                    results[i] = (int) Math.Pow(i, 2);
                 }
             });
-           Console.WriteLine();
-           Console.WriteLine($"was loop completed?{result.IsCompleted} "); //tamamlanmışsa true eğer durdurulmuşsa veya hata fırlatılmışsa false
-           if(result.LowestBreakIteration.HasValue)
-               Console.WriteLine($"lowest break iteration is {result.LowestBreakIteration}");
+
+
         }
         static void Main(string[] args)
         {
-            try
-            {
-                Demo();
-            }
-            catch(OperationCanceledException)
-            {
-
-            }
-         
+            var summary = BenchmarkRunner.Run<Program>();
+            Console.WriteLine(summary);
         }
     }
 }
