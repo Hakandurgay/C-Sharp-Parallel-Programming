@@ -20,26 +20,38 @@ namespace ParallelProgramming
       
         static void Main(string[] args)
         {
-            const int count = 50;
-            var items = Enumerable.Range(1, count).ToArray();
-            var results = new int[count];
-
-            //AsParallel extension metodu kullanılarak paralel linq sorgusu oluşturulur
-            items.AsParallel().ForAll(x =>  //forall geriye değer döndürmez 
+            var items = ParallelEnumerable.Range(1, 20); //geriye paralel query döndürür
+            var cts =new CancellationTokenSource();
+            var results = items.Select(i =>
             {
-                int newValue = x * x * x;
-                Console.WriteLine($"{newValue} ({Task.CurrentId})\t");
-                results[x - 1] = newValue;
+                double result = Math.Log10(i);
+             //   if(result>1) throw new InvalidOperationException(); //bu şekilde hata fırlatılabilir
+
+                Console.WriteLine($"i={i}, tid={Task.CurrentId}");
+                return result;
             });
-            Console.WriteLine();
-            Console.WriteLine();
-
-            var cubes = items.AsParallel().AsOrdered().Select(x => x * x * x);  //asordered kullanılarak sıra sağlanır
-            foreach (var i in cubes)
+            try
             {
-                Console.WriteLine($"{i}\t");
+                foreach (var x in results)
+                {
+                    if (x > 1)
+                        cts.Cancel();
+
+                    Console.WriteLine($"result={x}");
+                }
             }
-            Console.WriteLine();
+            catch (AggregateException ae)
+            {
+                ae.Handle(e =>
+                {
+                    Console.WriteLine($"{e.GetType().Name}: {e.Message}");
+                    return true;
+                });
+            }
+            catch (OperationCanceledException e)
+            {
+                Console.WriteLine("canceled");
+            }
         }
     }
 }
