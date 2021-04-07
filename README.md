@@ -1,3 +1,5 @@
+*Yapılan alıştırmaları görmek için commitlere giriniz.
+
 .Net ile Task Parallel Library kütüphanesi öğrenmek için bitirdiğim udemy kursundan ve farklı yerlerden derlediğim, içerisinde
 
 Eş zamanlı task'ler oluşturma,
